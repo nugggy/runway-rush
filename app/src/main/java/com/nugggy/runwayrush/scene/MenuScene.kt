@@ -50,6 +50,7 @@ class SplashScene(game: Game) : Scene(game) {
     override fun enter() {
         Thread {
             Catalog.size; Themes.count
+            if (BuildConfig.DEBUG) { com.nugggy.runwayrush.model.Audit.run(); game.activity.getExternalFilesDir(null)?.let { com.nugggy.runwayrush.model.ContactSheet.write(it) } }
             game.assets.bitmap("bg/menu.jpg"); game.assets.bitmap("bg/studio.jpg")
             loaded = true
         }.start()

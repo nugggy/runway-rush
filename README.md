@@ -11,8 +11,8 @@ On your phone, open the link, download the file and allow your browser to instal
 ## What's in the game
 
 - A character creator covering skin tone, body shape, height, 22 hairstyles, 16 hair colours, eyes, brows, lips, makeup, freckles and facial hair.
-- 2,296 clothing items across 160 styles: tops, bottoms, dresses and suits, outerwear, shoes, hats, eyewear, necklaces, earrings, bags, and wings and capes. Fabrics use real textile photos (denim, sequin, tartan, velvet, lace and more).
-- 140 themes, from Beach Day and Disco Fever to Cyberpunk and Fairytale Princess.
+- 2,709 clothing items across 201 styles: tops, bottoms, dresses and suits, outerwear, shoes, hats, eyewear, necklaces, earrings, bags, and wings and capes. Fabrics use real textile photos (denim, sequin, tartan, velvet, lace and more).
+- 140 themes, from Beach Day and Disco Fever to Cyberpunk and Fairytale Princess. Every theme is checked so each department stocks pieces that suit it, and racks with on-theme stock show a gold star in the store and on the minimap.
 - A walkable store with 11 departments, a minimap, fitting rooms and a mirror, plus AI rivals shopping beside you.
 - A runway show with lights, camera flashes and a crowd, then a vote judged by players, AI rivals and an audience panel.
 - WiFi party mode for up to 8 phones on the same network. Phones find each other automatically, or you can join by IP address. AI rivals can fill empty spots.

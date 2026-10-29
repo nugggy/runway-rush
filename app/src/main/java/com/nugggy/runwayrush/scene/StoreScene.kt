@@ -43,6 +43,7 @@ class Fixture(val x: Float, val y: Float, val style: Style, val items: List<Item
     val w = when (style.slot) { Slot.SHOES, Slot.HAT -> 150f; Slot.GLASSES, Slot.EARS, Slot.NECK -> 130f; Slot.BACK -> 120f; else -> 170f }
     val foot = RectF(x - w / 2, y - 30f, x + w / 2, y + 6f)
     var cache: Bitmap? = null
+    var hot = 0
 }
 
 class Zone(val name: String, val slots: List<Slot>, val rect: RectF, val colour: Int)
@@ -54,8 +55,8 @@ class Shopper(val c: Contestant) {
 
 class StoreScene(game: Game, private val match: Match) : Scene(game) {
     companion object {
-        const val WW = 4600f
-        const val WH = 3200f
+        const val WW = 5000f
+        const val WH = 4400f
         const val REACH = 170f
     }
 
@@ -128,7 +129,7 @@ class StoreScene(game: Game, private val match: Match) : Scene(game) {
         game.assets.bitmap("bg/floor_marble.jpg")?.let { marbleShader = BitmapShader(it, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR) }
         val elapsed = (System.currentTimeMillis() - match.started) / 1000f
         if (match.multiplayer) remaining = (match.duration - elapsed).coerceIn(30f, match.duration)
-        showTip("Find pieces that fit: ${match.theme.name}")
+        showTip("Gold stars mark racks with on-theme pieces")
     }
 
     private fun build() {
@@ -155,7 +156,7 @@ class StoreScene(game: Game, private val match: Match) : Scene(game) {
             for ((i, st) in styles.withIndex()) {
                 val cx = z.rect.left + 60f + gx * (i % cols + 0.5f)
                 val cy = z.rect.top + 150f + gy * (i / cols + 0.5f) + 30f
-                fixtures += Fixture(cx, cy, st, Catalog.byStyle[st.key] ?: emptyList(), z)
+                fixtures += Fixture(cx, cy, st, Catalog.byStyle[st.key] ?: emptyList(), z).also { f -> f.hot = f.items.count { Scoring.itemFit(it, match.theme) >= com.nugggy.runwayrush.model.Audit.GOOD } }
             }
         }
     }
@@ -305,29 +306,37 @@ class StoreScene(game: Game, private val match: Match) : Scene(game) {
                     val wx = (t.x - minimap.left) / minimap.width() * WW; val wy = (t.y - minimap.top) / minimap.height() * WH
                     moveTo = wx to wy; target = null; return true
                 }
-                if (t.x < w * 0.42f && joyId < 0) { joyId = t.id; joyX = t.x; joyY = t.y; joyDX = 0f; joyDY = 0f; return true }
+                if (t.x < w * 0.42f && joyId < 0) { joyId = t.id; joyX = t.x; joyY = t.y; joyDX = 0f; joyDY = 0f; joyMax = 0f; tapX = t.x; tapY = t.y; return true }
                 tapId = t.id; tapX = t.x; tapY = t.y; tapT = time
             }
             TouchType.MOVE -> if (t.id == joyId) {
                 joyDX = t.x - joyX; joyDY = t.y - joyY
+                joyMax = maxOf(joyMax, hypot(t.x - tapX, t.y - tapY))
                 val d = hypot(joyDX, joyDY)
                 if (d > 90f) { joyX += joyDX / d * (d - 90f); joyY += joyDY / d * (d - 90f); joyDX = t.x - joyX; joyDY = t.y - joyY }
             }
             TouchType.UP -> {
-                if (t.id == joyId) { joyId = -1; joyDX = 0f; joyDY = 0f }
-                else if (t.id == tapId) {
+                if (t.id == joyId) {
+                    joyId = -1; joyDX = 0f; joyDY = 0f
+                    // a touch on the joystick side that never dragged is a tap
+                    if (joyMax < 24f) tapAt(t.x, t.y)
+                } else if (t.id == tapId) {
                     tapId = -1
-                    if (hypot(t.x - tapX, t.y - tapY) < 30f) {
-                        val wx = camX + (t.x - w / 2) / zoom; val wy = camY + (t.y - h / 2) / zoom
-                        val hit = fixtures.firstOrNull { wx > it.x - it.w / 2 - 10f && wx < it.x + it.w / 2 + 10f && wy > it.y - 150f && wy < it.y + 20f }
-                        if (hit != null) {
-                            if (dist(hit) < REACH) openRack(hit) else { target = hit; moveTo = hit.x to hit.y + 50f }
-                        } else { target = null; moveTo = wx to wy }
-                    }
+                    if (hypot(t.x - tapX, t.y - tapY) < 30f) tapAt(t.x, t.y)
                 }
             }
         }
         return true
+    }
+
+    private var joyMax = 0f
+
+    private fun tapAt(sx: Float, sy: Float) {
+        val wx = camX + (sx - w / 2) / zoom; val wy = camY + (sy - h / 2) / zoom
+        val hit = fixtures.firstOrNull { wx > it.x - it.w / 2 - 10f && wx < it.x + it.w / 2 + 10f && wy > it.y - 150f && wy < it.y + 20f }
+        if (hit != null) {
+            if (dist(hit) < REACH) openRack(hit) else { target = hit; moveTo = hit.x to hit.y + 50f }
+        } else { target = null; moveTo = wx to wy }
     }
 
     private fun panelTouch(t: Touch): Boolean {
@@ -353,7 +362,7 @@ class StoreScene(game: Game, private val match: Match) : Scene(game) {
             val rnd = Random(item.id)
             repeat(14) { particles.add(floatArrayOf(at.centerX(), at.centerY(), (rnd.nextFloat() - 0.5f) * 500f, -200f - rnd.nextFloat() * 300f, 0.8f, rnd.nextInt(4).toFloat())) }
             val fit = Scoring.itemFit(item, match.theme)
-            if (fit >= 6f) showTip("The judges will love that for ${match.theme.name}") else if (fit < 1f && item.slot in setOf(Slot.TOP, Slot.BOTTOM, Slot.DRESS)) showTip("Hmm, is that really on theme?")
+            if (fit >= com.nugggy.runwayrush.model.Audit.GOOD) showTip("The judges will love that for ${match.theme.name}") else if (fit < 1f && item.slot in setOf(Slot.TOP, Slot.BOTTOM, Slot.DRESS)) showTip("Hmm, is that really on theme?")
         }
     }
 
@@ -394,7 +403,7 @@ class StoreScene(game: Game, private val match: Match) : Scene(game) {
         // back wall
         p.color = -16777216; p.shader = LinearGradient(0f, 0f, 0f, 110f, 0xFF4B2A5E.toInt(), 0xFF2E1A47.toInt(), Shader.TileMode.CLAMP)
         c.drawRect(0f, 0f, WW, 110f, p); p.shader = null
-        for (i in 0 until 23) { val x = 100f + i * 200f; Look.spotlight(c, x, 110f, 90f, 0x66FFF4C0); p.color = 0xFFFFF4C0.toInt(); c.drawRect(x - 30f, 96f, x + 30f, 104f, p) }
+        for (i in 0 until (WW / 200f).toInt()) { val x = 100f + i * 200f; Look.spotlight(c, x, 110f, 90f, 0x66FFF4C0); p.color = 0xFFFFF4C0.toInt(); c.drawRect(x - 30f, 96f, x + 30f, 104f, p) }
         drawFittingRoom(c)
 
         // y-sorted fixtures and people
@@ -459,6 +468,13 @@ class StoreScene(game: Game, private val match: Match) : Scene(game) {
         r.set(f.x - tw / 2, f.y + 14f, f.x + tw / 2, f.y + 46f)
         Ui.pill(c, r, 0xDD2E1A47.toInt())
         Ui.text(c, label, f.x, f.y + 38f, 22f, Color.WHITE, Paint.Align.CENTER, shadow = false)
+        if (f.hot > 0) {
+            // on-theme stock marker
+            val by = f.y - 178f + sin(time * 3f + f.x * 0.01f) * 6f
+            Look.spotlight(c, f.x, by, 46f, 0x66FFD86B)
+            Ui.star(c, f.x, by, 22f, Pal.GOLD)
+            Ui.text(c, "${f.hot}", f.x, by + 8f, 20f, Pal.INK, Paint.Align.CENTER, Ui.black, false)
+        }
     }
 
     /** Pre-renders a rack with a few of its pieces so drawing the shop each frame stays cheap. */
@@ -540,8 +556,7 @@ class StoreScene(game: Game, private val match: Match) : Scene(game) {
         Ui.panel(c, minimap, 0xDD1B1026.toInt(), 12f, 0x66FFFFFF)
         val sx = minimap.width() / WW; val sy = minimap.height() / WH
         for (z in zones) { p.color = AvatarRenderer.withAlpha(z.colour, 170); c.drawRect(minimap.left + z.rect.left * sx, minimap.top + z.rect.top * sy, minimap.left + z.rect.right * sx, minimap.top + z.rect.bottom * sy, p) }
-        p.color = 0xAA2E1A47.toInt()
-        for (f in fixtures) c.drawCircle(minimap.left + f.x * sx, minimap.top + f.y * sy, 2f, p)
+        for (f in fixtures) { p.color = if (f.hot > 0) Pal.GOLD else 0xAA2E1A47.toInt(); c.drawCircle(minimap.left + f.x * sx, minimap.top + f.y * sy, if (f.hot > 0) 3.5f else 2f, p) }
         for (s in shoppers) { p.color = if (s.c.ai) 0xFFFFFFFF.toInt() else Pal.SKY; c.drawCircle(minimap.left + s.x * sx, minimap.top + s.y * sy, 4f, p) }
         p.color = Pal.PINK; c.drawCircle(minimap.left + px * sx, minimap.top + py * sy, 6f + sin(time * 6f), p)
         p.style = Paint.Style.STROKE; p.strokeWidth = 2f; p.color = Color.WHITE
@@ -614,7 +629,7 @@ class StoreScene(game: Game, private val match: Match) : Scene(game) {
             Ui.text(c, name, cr.centerX(), cr.bottom - 26f, 17f, Color.WHITE, Paint.Align.CENTER, Ui.regular, false)
             if (worn) { Ui.pill(c, RectF(cr.right - 44f, cr.top + 8f, cr.right - 8f, cr.top + 44f), Pal.GOLD); Icons.draw(c, "check", cr.right - 26f, cr.top + 26f, 24f, Pal.INK) }
             val fit = Scoring.itemFit(it, match.theme)
-            if (fit >= 6f) Ui.star(c, cr.left + 24f, cr.top + 24f, 12f, 0xCCFFD86B.toInt())
+            if (fit >= com.nugggy.runwayrush.model.Audit.GOOD) Ui.star(c, cr.left + 24f, cr.top + 24f, 12f, 0xCCFFD86B.toInt())
         }
         c.restore()
         if (items.isEmpty() && f == null) Ui.text(c, "You're not wearing anything from the shop yet.", panel.centerX(), panel.centerY() + 60f, 26f, Pal.GREY, Paint.Align.CENTER, Ui.regular)

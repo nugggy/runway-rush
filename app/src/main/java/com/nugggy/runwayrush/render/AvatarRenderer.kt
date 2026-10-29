@@ -122,7 +122,7 @@ object AvatarRenderer {
 
         // 2. legs
         val g = Garments
-        val tail = bottom?.style?.key == "mermaidtail"
+        val tail = bottom?.let { Garments.key(it) } == "mermaidtail"
         for (side in intArrayOf(-1, 1)) {
             val lift = if (side < 0) pose.liftL else pose.liftR
             c.save()
@@ -131,7 +131,7 @@ object AvatarRenderer {
                 if (!ghost) limb(c, b.legW, b.legW * 0.55f, b.legLen, skin, mq)
                 // foot
                 if (shoes == null && !ghost) { p.shader = null; p.color = darker(skin, 0.06f); c.drawOval(-5f, b.legLen - 2f, 5f + side * 2f, b.legLen + 7f, p) }
-                val wide = bottom?.style?.key in setOf("wide", "flares", "culottes") || dress?.style?.key in setOf("tux", "suit")
+                val wide = bottom?.let { Garments.key(it) } in setOf("wide", "flares", "culottes") || dress?.let { Garments.key(it) } in setOf("tux", "suit")
                 if (!wide) shoes?.let { g.shoe(c, b, it, side, t) }
                 g.legs(c, b, bottom, dress, side, t, mq)
                 if (wide) shoes?.let { g.shoe(c, b, it, side, t) }
@@ -147,7 +147,7 @@ object AvatarRenderer {
             if (bottom == null && dress == null) g.baseShortsTorso(c, b)
         }
         bottom?.let { g.bottomTorso(c, b, it, t) }
-        top?.let { g.topTorso(c, b, it, t, tucked = bottom != null && bottom.style.key in setOf("pencil", "wide", "culottes", "pleated")) }
+        top?.let { g.topTorso(c, b, it, t, tucked = bottom != null && Garments.key(bottom) in setOf("pencil", "wide", "culottes", "pleated")) }
         dress?.let { g.dressTorso(c, b, it, t) }
         o?.get(Slot.NECK)?.let { if (it.style.key !in Garments.OVER_NECK) g.neck(c, b, it, t) }
         outer?.let { g.outerTorso(c, b, it, t) }
@@ -176,6 +176,7 @@ object AvatarRenderer {
 
         // 5. head
         if (!ghost) head(c, b, skin, mq, pose, t, o) else headItems(c, b, o, t)
+        if (dress != null && Garments.key(dress) == "ghost") g.dressTorso(c, b, dress, t)
     }
 
     private fun headItems(c: Canvas, b: Body, o: Outfit?, t: Float) {

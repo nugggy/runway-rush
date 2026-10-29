@@ -23,6 +23,55 @@ import kotlin.math.sin
 object Garments {
     val OVER_NECK = setOf("scarf", "boa", "lei", "silkscarf")
 
+    /** Newer styles reuse an existing cut, then [decor] adds what makes them distinct. */
+    private val BASE = mapOf(
+        "petee" to "tee", "tattered" to "tee", "chefjacket" to "turtle", "pirateshirt" to "peasant", "westernshirt" to "shirt",
+        "gymshorts" to "shorts", "skort" to "mini", "chefpants" to "wide", "utility" to "cargo", "breeches" to "culottes",
+        "chainmail" to "leggings", "uniform" to "jeans", "ripped" to "jeans", "fringeskirt" to "mini",
+        "firecoat" to "raincoat", "tailcoat" to "blazer",
+        "hightops" to "ankleboots", "heroboots" to "kneeboots", "pirateboots" to "kneeboots", "sabatons" to "ankleboots",
+        "ridingboots" to "kneeboots", "spookyboots" to "combat", "workboots" to "combat", "spats" to "loafers", "clogs" to "platforms",
+        "fairyslippers" to "flats", "espadrilles" to "flats", "maryjanes" to "flats",
+    )
+
+    fun key(it: Item): String = BASE[it.style.key] ?: it.style.key
+
+    /** Finishing details for aliased styles. [layer] is torso, leg, shoe or outer. */
+    private fun decor(c: Canvas, b: Body, it: Item, layer: String, side: Int, t: Float) {
+        val col = it.colour.rgb; val acc = it.accent.rgb
+        val L = b.legLen
+        when (it.style.key) {
+            "petee" -> if (layer == "torso") { line(c, acc, 2f, -6.8f, 46f, 0f, 50f, 6.8f, 46f); Ui3.crest(c, 9f, 66f, acc) }
+            "tattered" -> if (layer == "torso") {
+                line(c, darker(col, 0.45f), 0.9f, -b.hp - 2f, 116f, -12f, 110f, -6f, 118f, 2f, 108f, 8f, 117f, 14f, 110f, b.hp + 2f, 117f)
+                for ((x, y) in listOf(-8f to 70f, 6f to 84f, -3f to 98f)) { Shapes.poly(floatArrayOf(x, y, x + 3f, y + 2f, x + 1f, y + 5f, x - 2.5f, y + 3f), path2); solid(c, path2, darker(col, 0.5f), false) }
+            }
+            "chefjacket" -> if (layer == "torso") { for (i in 0 until 4) { dot(c, darker(col, 0.35f), -5f, 62f + i * 10f, 1.3f); dot(c, darker(col, 0.35f), 5f, 62f + i * 10f, 1.3f) }; line(c, darker(col, 0.25f), 0.7f, -9f, 52f, 9f, 110f) }
+            "pirateshirt" -> if (layer == "torso") { line(c, 0xFF5A3420.toInt(), 0.7f, -3f, 52f, 3f, 55f, -3f, 58f, 3f, 61f); line(c, 0xFF3A2A1A.toInt(), 3f, -b.wa - 2f, b.waistY + 2f, b.wa + 2f, b.waistY + 2f); dot(c, 0xFFE3B341.toInt(), 0f, b.waistY + 2f, 2.2f) }
+            "westernshirt" -> if (layer == "torso") { line(c, acc, 1.2f, -b.sh, 58f, -6f, 62f, 0f, 56f, 6f, 62f, b.sh, 58f); for (y in floatArrayOf(68f, 80f, 92f)) dot(c, 0xFFF2E8D2.toInt(), 0f, y, 1.2f) }
+            "gymshorts" -> if (layer == "leg") line(c, acc, 1.6f, side * (b.legW + 1.6f), -4f, side * (b.legW + 1.8f), 15f)
+            "skort" -> if (layer == "torso") for (i in -3..3) line(c, darker(col, 0.3f), 0.5f, i * 4f, b.hipY + 4f, i * 5f, 134f)
+            "utility" -> if (layer == "leg") { line(c, 0xFFD8FF5C.toInt(), 1.8f, -b.legW - 1f, 56f, b.legW + 1f, 56f); line(c, 0xFFC7CBD3.toInt(), 1f, -b.legW - 1f, 58.5f, b.legW + 1f, 58.5f) }
+            "breeches" -> if (layer == "leg") for (k in 0..2) dot(c, 0xFFE3B341.toInt(), side * (b.legW + 2f), 34f + k * 5f, 0.9f)
+            "uniform" -> if (layer == "leg") line(c, acc, 1.6f, side * (b.legW + 1.2f), -4f, side * (b.legW * 0.72f + 1.6f), L - 3f)
+            "ripped" -> if (layer == "leg") for ((x, y) in listOf(-2f to 30f, 3f to 48f, -1f to 62f)) { Shapes.poly(floatArrayOf(x - 3f, y, x + 3f, y - 1f, x + 2.5f, y + 2.5f, x - 2f, y + 2f), path2); solid(c, path2, b.skin, false); line(c, 0xEEFFFFFF.toInt(), 0.5f, x - 3.5f, y, x + 3.5f, y - 0.5f) }
+            "fringeskirt" -> if (layer == "torso") for (i in -9..9) line(c, darker(col, 0.15f), 0.7f, i * 2.3f, 130f, i * 2.5f, 142f)
+            "firecoat" -> if (layer == "outer") { for (y in floatArrayOf(98f, 132f)) { line(c, 0xFFD8FF5C.toInt(), 3.2f, -b.hp - 6f, y, b.hp + 6f, y); line(c, 0xFFE8E8F0.toInt(), 1.2f, -b.hp - 6f, y, b.hp + 6f, y) } }
+            "tailcoat" -> if (layer == "outer") for (s in intArrayOf(-1, 1)) fill(c, it, Shapes.poly(floatArrayOf(s * (b.wa - 2f), 124f, s * (b.hp + 4f), 124f, s * (b.hp + 2f), 168f, s * (b.hp - 6f), 172f), path2), t)
+            "hightops" -> if (layer == "shoe") { solid(c, Shapes.sym(floatArrayOf(0f, L + 4f, b.legW * 0.55f + 3.4f, L + 4f, b.legW * 0.55f + 3.4f, L + 4f, b.legW * 0.55f + 3.4f, L + 8f, b.legW * 0.55f + 3.4f, L + 8f, 0f, L + 8f), path2), Color.WHITE); for (i in 0 until 4) line(c, acc, 0.6f, -2f, L - 14f + i * 4f, 2f, L - 12f + i * 4f); dot(c, acc, side * 3f, L - 6f, 1.6f) }
+            "pirateboots" -> if (layer == "shoe") fill(c, it, Shapes.sym(floatArrayOf(0f, 24f, b.legW * 0.85f + 3f, 24f, b.legW * 0.85f + 3f, 24f, b.legW * 0.8f + 2.5f, 36f, b.legW * 0.8f + 2.5f, 36f, 0f, 36f), path2), t, col = darker(col, 0.15f))
+            "sabatons" -> if (layer == "shoe") for (k in 0..3) line(c, lighter(col, 0.4f), 0.8f, -b.legW * 0.55f - 2f, L - 14f + k * 5f, b.legW * 0.55f + 2f, L - 14f + k * 5f)
+            "ridingboots" -> if (layer == "shoe") { line(c, 0x88FFFFFF.toInt(), 1f, -1.5f, 32f, -1f, L - 4f) }
+            "heroboots" -> if (layer == "shoe") line(c, acc, 2f, -b.legW * 0.8f - 1.6f, 30f, b.legW * 0.8f + 1.6f, 30f)
+            "spookyboots" -> if (layer == "shoe") for (k in 0..3) { val y = L - 22f + k * 6f; Shapes.lines(floatArrayOf(side * (b.legW * 0.55f + 2f), y, side * (b.legW * 0.55f + 5f), y + 1.5f, side * (b.legW * 0.55f + 2f), y + 3f), path2); solid(c, path2, 0xFFC7CBD3.toInt(), false) }
+            "workboots" -> if (layer == "shoe") dot(c, 0xFFE3B341.toInt(), 0f, L + 2f, 2f)
+            "spats" -> if (layer == "shoe") solid(c, Shapes.sym(floatArrayOf(0f, L - 8f, b.legW * 0.55f + 2f, L - 8f, b.legW * 0.55f + 2.6f, L + 2f, 0f, L + 3f), path2), 0xFFF2F2EE.toInt())
+            "espadrilles" -> if (layer == "shoe") for (k in 0..2) line(c, 0xFFD9B98A.toInt(), 1f, -b.legW * 0.55f - 3f, L + 6.5f + k * 0.0f, b.legW * 0.55f + 3f, L + 6.5f)
+            "maryjanes" -> if (layer == "shoe") { line(c, darker(col, 0.3f), 1.2f, -b.legW * 0.55f - 1.5f, L + 1f, b.legW * 0.55f + 1.5f, L + 1f); dot(c, 0xFFE3B341.toInt(), side * 3f, L + 1f, 0.9f) }
+            "fairyslippers" -> if (layer == "shoe") for (k in -1..1) { Shapes.poly(floatArrayOf(k * 3f, L + 1f, k * 3f + 2f, L - 3f, k * 3f + 4f, L + 1f), path2); solid(c, path2, lighter(col, 0.3f), false) }
+        }
+    }
+
     private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
     private val sp = Paint(Paint.ANTI_ALIAS_FLAG)
     private val path = Path()
@@ -199,7 +248,7 @@ object Garments {
     }
 
     fun topTorso(c: Canvas, b: Body, it: Item, t: Float, tucked: Boolean) {
-        val k = it.style.key
+        val k = key(it)
         var hem = topHem(k)
         if (tucked && hem > 100f) hem = 98f
         val acc = it.accent.rgb
@@ -250,6 +299,7 @@ object Garments {
             "crop", "tee" -> if (it.fabric == "solid" && it.id % 3 == 0) Ui2.motif(c, 0f, 75f, 7f, acc, it.id)
         }
         if (k == "tuxshirt") bow(c, 0f, 47.5f, 6f, 0xFF1E1C22.toInt())
+        decor(c, b, it, "torso", 0, t)
     }
 
     private fun collar(c: Canvas, b: Body, col: Int, it: Item, t: Float) {
@@ -272,7 +322,7 @@ object Garments {
     }
 
     fun sleeve(c: Canvas, b: Body, it: Item, t: Float) {
-        val k = it.style.key
+        val k = key(it)
         val w = b.armW
         val shape: FloatArray? = when (k) {
             "tee", "polo", "crop" -> sleeveShape(b, 17f, w + 1.6f)
@@ -288,6 +338,7 @@ object Garments {
             "wrap" -> sleeveShape(b, 40f, w * 0.85f + 2f)
             "kaftan" -> sleeveShape(b, 50f, w + 9f)
             "princess" -> sleeveShape(b, 20f, w + 1f, puff = 5f)
+            "prairie" -> sleeveShape(b, 46f, w + 1.8f, puff = 3.5f)
             "gown", "bridal" -> if (it.id % 2 == 0) null else sleeveShape(b, 60f, w * 0.75f + 1f)
             "suit", "tux", "tracksuit", "onesie", "superhero", "wetsuit", "skeleton" -> sleeveShape(b, 63f, w * 0.75f + 1.6f)
             "spacesuit" -> sleeveShape(b, 64f, w + 3f, puff = 3f)
@@ -320,7 +371,7 @@ object Garments {
     // ---------------------------------------------------------------- bottoms
 
     fun bottomTorso(c: Canvas, b: Body, it: Item, t: Float) {
-        val k = it.style.key
+        val k = key(it)
         val top = b.waistY - 3f
         when (k) {
             "mini" -> fill(c, it, Shapes.sym(skirt(b, top, 134f, 5f), path), t)
@@ -362,13 +413,14 @@ object Garments {
                 if (k in setOf("wide", "culottes")) line(c, darker(it.colour.rgb, 0.35f), 1.5f, -b.wa - 1f, waist + 1.5f, b.wa + 1f, waist + 1.5f)
             }
         }
+        decor(c, b, it, "torso", 0, t)
     }
 
     /** Leg sections of bottoms and one-pieces, drawn in leg-local coordinates. */
     fun legs(c: Canvas, b: Body, bottom: Item?, dress: Item?, side: Int, t: Float, mq: Boolean) {
-        bottom?.let { legPart(c, b, it, it.style.key, side, t) }
+        bottom?.let { legPart(c, b, it, key(it), side, t) }
         dress?.let {
-            val k = it.style.key
+            val k = key(it)
             val legKey = when (k) {
                 "jumpsuit" -> "wide"; "overalls" -> "jeans"; "suit", "tux" -> "wide"; "tracksuit" -> "joggers"; "onesie" -> "onesie"
                 "spacesuit" -> "space"; "superhero", "wetsuit" -> "leggings"; "skeleton" -> "skeleton"; "safari" -> "shorts"
@@ -404,12 +456,13 @@ object Garments {
             "jeans", "skinny", "flares" -> if (it.fabric == "denim" && it.id % 4 == 0) { line(c, 0xCCFFFFFF.toInt(), 0.7f, -3f, 36f, 3f, 36f, -2f, 38f, 3.5f, 38f) }
         }
         if (key == "flares" || key == "wide") line(c, darker(it.colour.rgb, 0.3f), 0.5f, 0f, 10f, 0f, L)
+        decor(c, b, it, "leg", side, t)
     }
 
     // ---------------------------------------------------------------- dresses
 
     fun dressTorso(c: Canvas, b: Body, it: Item, t: Float) {
-        val k = it.style.key
+        val k = key(it)
         val col = it.colour.rgb; val acc = it.accent.rgb
         fun body(pts: FloatArray) = fill(c, it, Shapes.sym(pts, path), t)
         fun dress(neck: String, arm: String, hem: Float, flare: Float, ease: Float = 1.6f) {
@@ -523,6 +576,18 @@ object Garments {
                 line(c, 0xFF3A2A1A.toInt(), 2.4f, -b.wa - 2f, b.waistY + 1f, b.wa + 2f, b.waistY + 1f)
                 fill(c, it, Shapes.sym(floatArrayOf(0f, 112f, b.hp + 2f, 112f, b.hp + 2f, b.crotchY + 2f, 0f, b.crotchY + 4f), path2), t)
             }
+            "ghost" -> {
+                p.style = Paint.Style.FILL
+                body(floatArrayOf(0f, -6f, 12f, -4f, 20f, 8f, 22f, 30f, b.sh + 4f, 60f, b.hp + 8f, 120f, b.hp + 12f, 176f, b.hp + 4f, 170f, b.hp - 2f, 180f, 12f, 172f, 6f, 182f, 0f, 174f))
+                for (s in intArrayOf(-1, 1)) { p.color = 0xFF1E1C22.toInt(); c.drawOval(s * 7f - 3.5f, 16f, s * 7f + 3.5f, 26f, p) }
+                p.color = 0xFF1E1C22.toInt(); c.drawOval(-3f, 30f, 3f, 37f, p)
+            }
+            "prairie" -> {
+                dress("crew", "set", 190f, 14f)
+                for (y in floatArrayOf(150f, 172f)) line(c, darker(col, 0.25f), 0.7f, -b.hp - 10f, y, b.hp + 10f, y)
+                fill(c, it, Shapes.sym(floatArrayOf(0f, 186f, b.hp + 14f, 184f, b.hp + 17f, 194f, b.hp + 17f, 194f, 0f, 196f), path2), t, col = lighter(col, 0.25f), fabric = "lace")
+                line(c, acc, 1.6f, -b.wa - 1.5f, b.waistY, b.wa + 1.5f, b.waistY)
+            }
             else -> dress("crew", "set", 140f, 10f)
         }
     }
@@ -540,14 +605,14 @@ object Garments {
     private fun lapels(c: Canvas, b: Body, it: Item, t: Float, col: Int, bottom: Float) {
         for (s in intArrayOf(-1, 1)) {
             Shapes.lines(floatArrayOf(s * 1f, bottom, s * 7f, 46f, s * 11f, 48f, s * 13f, 60f, s * 9f, 64f), path2)
-            fill(c, it, path2, t, col = col, fabric = if (it.style.key == "tux") "satin" else it.fabric)
+            fill(c, it, path2, t, col = col, fabric = if (key(it) == "tux") "satin" else it.fabric)
         }
     }
 
     // ---------------------------------------------------------------- outerwear
 
     fun outerTorso(c: Canvas, b: Body, it: Item, t: Float) {
-        val k = it.style.key
+        val k = key(it)
         val col = it.colour.rgb; val acc = it.accent.rgb
         val hem = when (k) {
             "cropjkt" -> 88f; "biker", "bomber", "denimjkt", "varsity" -> 110f; "puffer" -> 116f; "waistcoat" -> 104f
@@ -557,6 +622,13 @@ object Garments {
         val closed = k in setOf("puffer", "raincoat", "varsity", "bomber", "military")
         val ease = when (k) { "puffer" -> 5f; "furcoat" -> 5f; "poncho" -> 0f; "waistcoat" -> 1f; else -> 3f }
         val flare = when (k) { "trench", "labcoat", "raincoat", "furcoat", "kimono" -> 6f; else -> 1f }
+        if (k == "apron") {
+            line(c, darker(col, 0.25f), 1.4f, -6f, 44f, -8f, 56f, 8f, 56f, 6f, 44f)
+            fill(c, it, Shapes.sym(floatArrayOf(0f, 56f, 9f, 56f, 9f, 56f, 10f, 92f, b.wa + 3f, 96f, b.hp + 2f, 140f, b.hp + 2f, 140f, 0f, 142f), path), t)
+            line(c, darker(col, 0.25f), 1.6f, -b.wa - 2f, b.waistY, -b.wa - 6f, 104f); line(c, darker(col, 0.25f), 1.6f, b.wa + 2f, b.waistY, b.wa + 6f, 104f)
+            fill(c, it, Shapes.sym(floatArrayOf(0f, 108f, 9f, 108f, 9f, 108f, 9f, 122f, 9f, 122f, 0f, 122f), path2), t, col = acc, fabric = "solid")
+            return
+        }
         if (k == "poncho") {
             fill(c, it, Shapes.sym(floatArrayOf(0f, 42f, 7f, 42f, 8f, 47f, b.sh + 10f, 75f, b.sh + 16f, 116f, b.sh + 16f, 116f, 0f, 124f), path), t)
             for (i in -6..6) line(c, acc, 0.8f, i * 4f, 116f + kotlin.math.abs(i) * -0.6f, i * 4.2f, 122f - kotlin.math.abs(i) * 0.6f)
@@ -599,13 +671,14 @@ object Garments {
             "kimono" -> { line(c, acc, 2f, -6.5f, 45f, -6f, hem); line(c, acc, 2f, 6.5f, 45f, 6f, hem) }
             "cropjkt" -> lapels(c, b, it, t, col, 70f)
         }
+        decor(c, b, it, "outer", 0, t)
     }
 
     // ---------------------------------------------------------------- neck, ears, glasses
 
     fun neck(c: Canvas, b: Body, it: Item, t: Float) {
         val col = it.colour.rgb; val acc = it.accent.rgb
-        when (it.style.key) {
+        when (key(it)) {
             "pearls" -> for (i in 0..14) { val a = Math.PI * (0.1 + 0.8 * i / 14.0); shine(c, (cos(a) * 11).toFloat(), 47f + (sin(a) * 11).toFloat(), 1.5f, col) }
             "chain" -> { p.style = Paint.Style.STROKE; p.strokeWidth = 1.2f; p.color = col; for (i in 0..10) { val a = Math.PI * (0.1 + 0.8 * i / 10.0); val x = (cos(a) * 12).toFloat(); val y = 47f + (sin(a) * 14).toFloat(); c.drawOval(x - 1.8f, y - 1.2f, x + 1.8f, y + 1.2f, p) }; p.style = Paint.Style.FILL }
             "choker" -> { fill(c, it, Shapes.lines(floatArrayOf(-6f, 41f, 6f, 41f, 6f, 44f, -6f, 44f), path), t); shine(c, 0f, 45.5f, 1.6f, acc) }
@@ -623,6 +696,12 @@ object Garments {
                 for (s in intArrayOf(-1, 1)) for (i in 0..18) { val y = 46f + i * 3.6f; val x = s * (7f + if (i < 3) i * 3.5f else 10.5f - (i - 3) * 0.12f); fuzz(c, x, y, 3.2f, fc, i) }
             }
             "medal" -> { line(c, acc, 2f, -7f, 46f, 0f, 70f, 7f, 46f); shine(c, 0f, 73f, 4.5f, col); com.nugggy.runwayrush.core.Ui.star(c, 0f, 73f, 2.2f, darker(col, 0.25f)) }
+            "whistle" -> {
+                line(c, acc, 0.9f, -7f, 46f, 0f, 70f, 7f, 46f)
+                Shapes.poly(floatArrayOf(-2f, 69f, 5f, 69f, 5f, 73f, 1f, 76f, -3f, 74f), path); p.style = Paint.Style.FILL
+                p.color = -16777216; p.shader = LinearGradient(-3f, 68f, 5f, 76f, lighter(col, 0.5f), darker(col, 0.3f), Shader.TileMode.CLAMP); c.drawPath(path, p); p.shader = null
+                dot(c, darker(col, 0.5f), 0.5f, 72.5f, 1f)
+            }
             "silkscarf" -> { fill(c, it, Shapes.poly(floatArrayOf(-8f, 42f, 8f, 42f, 6f, 48f, -6f, 48f), path), t); fill(c, it, Shapes.poly(floatArrayOf(-1f, 46f, 5f, 47f, 7f, 58f, 1f, 55f), path2), t) }
         }
     }
@@ -640,7 +719,7 @@ object Garments {
         val col = it.colour.rgb
         for (s in intArrayOf(-1, 1)) {
             val x = s * 15.5f; val y = 28.5f
-            when (it.style.key) {
+            when (key(it)) {
                 "studs" -> shine(c, x, y, 1.3f, col)
                 "hoops" -> { p.style = Paint.Style.STROKE; p.strokeWidth = 1f; p.color = col; c.drawCircle(x, y + 4f, 4f, p); p.style = Paint.Style.FILL }
                 "drops" -> { line(c, 0xFFE3B341.toInt(), 0.4f, x, y, x, y + 4f); Shapes.poly(floatArrayOf(x, y + 3.5f, x + 1.8f, y + 7f, x, y + 9f, x - 1.8f, y + 7f), path); solid(c, path, col) }
@@ -661,7 +740,7 @@ object Garments {
             line(c, frame, 0.8f, -2.2f, ey - 0.5f, 2.2f, ey - 0.5f)
             line(c, frame, 0.7f, -11f, ey - 1f, -15f, ey - 2f); line(c, frame, 0.7f, 11f, ey - 1f, 15f, ey - 2f)
         }
-        when (it.style.key) {
+        when (key(it)) {
             "roundsun" -> lensPair({ s -> Path().apply { addCircle(s * 6.4f, ey, 4.6f, Path.Direction.CW) } }, lens)
             "aviator" -> lensPair({ s -> Shapes.poly(floatArrayOf(s * 2.4f, ey - 3.5f, s * 10.5f, ey - 3.5f, s * 10f, ey + 2f, s * 6.5f, ey + 5f, s * 2.8f, ey + 1f), Path()) }, withAlpha(0xFF6E5A30.toInt(), 200))
             "cateye" -> lensPair({ s -> Shapes.poly(floatArrayOf(s * 2.2f, ey - 2.2f, s * 8f, ey - 3.5f, s * 12f, ey - 6f, s * 10.5f, ey + 2f, s * 6f, ey + 3.5f, s * 2.5f, ey + 1.5f), Path()) }, withAlpha(col, 90))
@@ -674,6 +753,10 @@ object Garments {
                 p.color = -16777216; p.shader = LinearGradient(-16f, 0f, 16f, 0f, intArrayOf(withAlpha(col, 210), withAlpha(lighter(col, 0.5f), 200), withAlpha(col, 210)), null, Shader.TileMode.CLAMP)
                 c.drawPath(path, p); p.shader = null
                 line(c, withAlpha(Color.WHITE, 140), 0.6f, -12f, ey - 2f, 12f, ey - 2f)
+            }
+            "heromask" -> {
+                fill(c, it, Shapes.poly(floatArrayOf(-15f, ey - 4f, -6f, ey - 5.5f, 0f, ey - 3f, 6f, ey - 5.5f, 15f, ey - 4f, 14f, ey + 3f, 7f, ey + 5f, 0f, ey + 2f, -7f, ey + 5f, -14f, ey + 3f), path), t)
+                for (s in intArrayOf(-1, 1)) { p.style = Paint.Style.FILL; p.color = Color.WHITE; c.drawOval(s * 6.2f - 3f, ey - 2f, s * 6.2f + 3f, ey + 2.2f, p); p.color = 0xFF120A10.toInt(); c.drawCircle(s * 6.2f, ey, 1.1f, p) }
             }
             "eyepatch" -> { line(c, 0xFF1E1C22.toInt(), 0.7f, -16f, 14f, 16f, 30f); p.color = col; c.drawOval(-10.5f, ey - 4f, -2f, ey + 4f, p) }
             "monocle" -> { p.style = Paint.Style.STROKE; p.strokeWidth = 1f; p.color = col; c.drawCircle(6.2f, ey, 4.4f, p); p.style = Paint.Style.FILL; line(c, col, 0.4f, 10f, ey + 2f, 13f, 50f) }
@@ -698,7 +781,7 @@ object Garments {
         val col = it.colour.rgb; val acc = it.accent.rgb
         fun f(pts: FloatArray) = fill(c, it, Shapes.poly(pts, path), t)
         fun fs(pts: FloatArray) = fill(c, it, Shapes.sym(pts, path), t)
-        when (it.style.key) {
+        when (key(it)) {
             "cap" -> { fs(floatArrayOf(0f, -3f, 10f, -1.5f, 16.5f, 8f, 17f, 13f, 0f, 13f)); fill(c, it, Shapes.poly(floatArrayOf(-17f, 11f, 17f, 11f, 21f, 15f, 0f, 17f, -21f, 15f), path2), t); dot(c, acc, 0f, -2.5f, 1.4f) }
             "beanie" -> { fs(floatArrayOf(0f, -6f, 11f, -4f, 17f, 6f, 17.5f, 13f, 0f, 13f)); fill(c, it, Shapes.sym(floatArrayOf(0f, 8f, 18f, 8f, 18f, 8f, 18f, 15f, 18f, 15f, 0f, 15f), path2), t); for (i in -7..7) line(c, darker(col, 0.25f), 0.5f, i * 2.4f, 8.5f, i * 2.4f, 14.5f); fuzz(c, 0f, -7f, 4f, acc, 1) }
             "sunhat" -> { fill(c, it, Shapes.poly(floatArrayOf(-36f, 11f, -20f, 4f, 20f, 4f, 36f, 11f, 20f, 15f, -20f, 15f), path2), t); fs(floatArrayOf(0f, -9f, 10f, -8f, 15f, 0f, 15f, 9f, 0f, 9f)); line(c, acc, 2.6f, -15f, 6f, 15f, 6f); flower(c, 12f, 5f, 3.5f, acc) }
@@ -727,6 +810,13 @@ object Garments {
             "bandana" -> { fs(floatArrayOf(0f, -2f, 10f, -1f, 16.5f, 8f, 17f, 13f, 12f, 11f, 0f, 10f)); fill(c, it, Shapes.poly(floatArrayOf(15f, 10f, 23f, 14f, 21f, 20f, 16f, 15f), path2), t) }
             "pirate" -> { fill(c, it, Shapes.poly(floatArrayOf(-27f, 8f, -18f, -10f, 0f, -6f, 18f, -10f, 27f, 8f, 0f, 12f), path), t); line(c, 0xFFE3B341.toInt(), 1f, -25f, 7.5f, 0f, 11f, 25f, 7.5f); dot(c, Color.WHITE, 0f, 0f, 3f); dot(c, 0xFF1E1C22.toInt(), -1f, 0f, 0.7f); dot(c, 0xFF1E1C22.toInt(), 1f, 0f, 0.7f) }
             "antlers" -> { p.style = Paint.Style.STROKE; p.strokeWidth = 2.2f; p.color = col; for (s in intArrayOf(-1, 1)) { c.drawLine(s * 8f, 4f, s * 14f, -18f, p); c.drawLine(s * 11.5f, -8f, s * 19f, -12f, p); c.drawLine(s * 13f, -14f, s * 9f, -22f, p) }; p.style = Paint.Style.FILL; line(c, darker(col, 0.2f), 2.5f, -16f, 8f, 16f, 8f) }
+            "sweatband" -> { fill(c, it, Shapes.poly(floatArrayOf(-16.5f, 9f, 0f, 6.5f, 16.5f, 9f, 16.5f, 14.5f, 0f, 12f, -16.5f, 14.5f), path), t, fabric = if (it.fabric == "solid") "knit" else it.fabric); line(c, it.accent.rgb, 0.9f, -16f, 11.5f, 0f, 9.2f, 16f, 11.5f) }
+            "firehelmet" -> {
+                fill(c, it, Shapes.poly(floatArrayOf(-27f, 12f, -16f, 8f, 16f, 8f, 27f, 12f, 30f, 16f, 16f, 14f, -16f, 14f, -30f, 16f), path2), t)
+                fill(c, it, Shapes.sym(floatArrayOf(0f, -10f, 10f, -9f, 16f, 0f, 16.5f, 11f, 0f, 11f), path), t)
+                line(c, darker(col, 0.3f), 1.6f, 0f, -10f, 0f, 10f)
+                Shapes.poly(floatArrayOf(-5f, -4f, 5f, -4f, 5f, 4f, 0f, 7f, -5f, 4f), path2); solid(c, path2, 0xFFE3B341.toInt())
+            }
             "santa" -> { fill(c, it, Shapes.poly(floatArrayOf(-16f, 8f, -10f, -8f, 6f, -14f, 22f, -6f, 26f, 6f, 16f, -2f, 16f, 8f), path), t); fuzz(c, 26f, 7f, 3.6f, Color.WHITE, 1); for (i in -4..4) fuzz(c, i * 4f, 9f, 3f, Color.WHITE, i + 4) }
         }
     }
@@ -750,7 +840,7 @@ object Garments {
         val col = it.colour.rgb; val acc = it.accent.rgb
         val lw = b.legW * 0.55f
         fun boot(top: Float, topW: Float) = fill(c, it, Shapes.sym(floatArrayOf(0f, top, topW, top, topW, top, lw + 1.6f, L - 4f, lw + 2.5f, L + 3f, lw + 3f, L + 7f, lw + 3f, L + 7f, 0f, L + 8f), path), t)
-        when (it.style.key) {
+        when (key(it)) {
             "sneakers" -> { fill(c, it, Shapes.sym(floatArrayOf(0f, L - 5f, lw + 1.5f, L - 5f, lw + 3.5f, L + 2f, lw + 3.5f, L + 6f, 0f, L + 6.5f), path), t); solid(c, Shapes.sym(floatArrayOf(0f, L + 5f, lw + 3.6f, L + 5f, lw + 3.6f, L + 5f, lw + 3.6f, L + 8f, lw + 3.6f, L + 8f, 0f, L + 8f), path2), Color.WHITE); line(c, acc, 0.9f, -2f, L - 2f, 2f, L - 2f, -2f, L, 2f, L) }
             "heels" -> { fill(c, it, Shapes.sym(floatArrayOf(0f, L - 1f, lw + 1.5f, L - 1f, lw + 2.4f, L + 4f, 1.5f, L + 9f, 0f, L + 9f), path), t); line(c, darker(col, 0.3f), 1.2f, side * (lw + 0.5f), L + 3f, side * (lw + 1f), L + 9f) }
             "ankleboots" -> boot(L - 16f, lw + 1.8f)
@@ -772,6 +862,7 @@ object Garments {
                 sparkleAt(c, t, 0f, L + 3f, 6f)
             }
         }
+        decor(c, b, it, "shoe", side, t)
     }
 
     // ---------------------------------------------------------------- hand-held items
@@ -779,7 +870,7 @@ object Garments {
     fun handItem(c: Canvas, b: Body, it: Item, t: Float) {
         val col = it.colour.rgb; val acc = it.accent.rgb
         val hy = b.armLen + 3.5f
-        when (it.style.key) {
+        when (key(it)) {
             "handbag" -> { p.style = Paint.Style.STROKE; p.strokeWidth = 1.4f; p.color = darker(col, 0.3f); c.drawArc(-6f, hy - 4f, 6f, hy + 10f, 180f, 180f, false, p); p.style = Paint.Style.FILL
                 fill(c, it, Shapes.poly(floatArrayOf(-9f, hy + 3f, 9f, hy + 3f, 9f, hy + 3f, 11f, hy + 18f, 11f, hy + 18f, -11f, hy + 18f, -11f, hy + 18f, -9f, hy + 3f), path), t); dot(c, 0xFFE3B341.toInt(), 0f, hy + 7f, 1.2f) }
             "clutch" -> { fill(c, it, Shapes.poly(floatArrayOf(-11f, hy - 3f, 7f, hy - 3f, 7f, hy - 3f, 7f, hy + 6f, 7f, hy + 6f, -11f, hy + 6f, -11f, hy + 6f, -11f, hy - 3f), path), t); line(c, darker(col, 0.3f), 0.6f, -11f, hy, 7f, hy + 2f) }
@@ -792,6 +883,13 @@ object Garments {
                 fill(c, it, Shapes.poly(floatArrayOf(0f, hy + 6f, 4f, hy + 20f, 3f, hy + 50f, 0f, hy + 58f, -3f, hy + 50f, -4f, hy + 20f), path), t) }
             "guitar" -> { line(c, 0xFF5A3420.toInt(), 2.4f, 0f, hy - 22f, 0f, hy + 10f); fill(c, it, Shapes.poly(floatArrayOf(-8f, hy + 8f, 0f, hy + 4f, 8f, hy + 8f, 11f, hy + 18f, 7f, hy + 22f, 11f, hy + 30f, 0f, hy + 36f, -11f, hy + 30f, -7f, hy + 22f, -11f, hy + 18f), path), t); Shapes.poly(floatArrayOf(-4f, hy + 18f, 4f, hy + 18f, 5f, hy + 28f, -5f, hy + 28f), path2); solid(c, path2, acc); for (i in -1..1) line(c, 0xFFC7CBD3.toInt(), 0.3f, i * 0.8f, hy - 22f, i * 0.8f, hy + 30f) }
             "racket" -> { line(c, 0xFF3A2A20.toInt(), 2f, 0f, hy - 4f, 0f, hy + 12f); p.style = Paint.Style.STROKE; p.strokeWidth = 1.6f; p.color = col; c.drawOval(-8f, hy + 12f, 8f, hy + 34f, p); p.strokeWidth = 0.3f; p.color = 0xCCFFFFFF.toInt(); for (i in -3..3) { c.drawLine(i * 2f, hy + 13f, i * 2f, hy + 33f, p); c.drawLine(-7f, hy + 23f + i * 2.8f, 7f, hy + 23f + i * 2.8f, p) }; p.style = Paint.Style.FILL }
+            "gymbag" -> { line(c, darker(col, 0.3f), 1.6f, -8f, hy + 8f, 0f, hy, 8f, hy + 8f); fill(c, it, Shapes.poly(floatArrayOf(-16f, hy + 10f, 16f, hy + 10f, 18f, hy + 18f, 16f, hy + 26f, -16f, hy + 26f, -18f, hy + 18f), path), t); line(c, acc, 1.6f, -16f, hy + 18f, 16f, hy + 18f); line(c, 0xFFC7CBD3.toInt(), 0.7f, -10f, hy + 11f, 10f, hy + 11f) }
+            "basketball" -> { p.color = -16777216; p.shader = RadialGradient(-3f, hy + 4f, 14f, lighter(col, 0.3f), darker(col, 0.25f), Shader.TileMode.CLAMP); c.drawCircle(1f, hy + 9f, 10f, p); p.shader = null
+                p.style = Paint.Style.STROKE; p.strokeWidth = 0.7f; p.color = 0xFF2A1A10.toInt(); c.drawCircle(1f, hy + 9f, 10f, p); c.drawLine(-9f, hy + 9f, 11f, hy + 9f, p); c.drawLine(1f, hy - 1f, 1f, hy + 19f, p)
+                c.drawArc(-12f, hy + 1f, -2f, hy + 17f, -60f, 120f, false, p); c.drawArc(4f, hy + 1f, 14f, hy + 17f, 120f, 120f, false, p); p.style = Paint.Style.FILL }
+            "spoon" -> { line(c, col, 2.2f, 0f, hy - 4f, 0f, hy + 26f); p.style = Paint.Style.FILL; p.color = col; c.drawOval(-4.5f, hy + 24f, 4.5f, hy + 36f, p); p.color = darker(col, 0.2f); c.drawOval(-3f, hy + 26f, 3f, hy + 33f, p) }
+            "cutlass" -> { fill(c, it, Shapes.poly(floatArrayOf(-1.5f, hy + 6f, 1.5f, hy + 6f, 4f, hy + 30f, 0f, hy + 44f, -2f, hy + 30f), path), t); line(c, 0xFFE3B341.toInt(), 2.4f, -6f, hy + 5f, 6f, hy + 5f); p.style = Paint.Style.STROKE; p.strokeWidth = 1.2f; p.color = 0xFFE3B341.toInt(); c.drawArc(-6f, hy - 6f, 6f, hy + 6f, 90f, 180f, false, p); p.style = Paint.Style.FILL }
+            "shield" -> { fill(c, it, Shapes.poly(floatArrayOf(-13f, hy - 4f, 13f, hy - 4f, 12f, hy + 14f, 0f, hy + 28f, -12f, hy + 14f), path), t); line(c, acc, 2.4f, 0f, hy - 3f, 0f, hy + 26f, 0f, hy + 26f, 0f, hy + 26f); line(c, acc, 2.4f, -12f, hy + 6f, 12f, hy + 6f); line(c, 0xFFC7CBD3.toInt(), 1f, -13f, hy - 4f, 13f, hy - 4f) }
             "bouquet" -> { Shapes.lines(floatArrayOf(-7f, hy - 6f, 7f, hy - 6f, 1f, hy + 14f, -1f, hy + 14f), path); solid(c, path, 0xFF4E9A5A.toInt()); for (i in 0 until 6) flower(c, -6f + (i % 3) * 6f, hy - 9f - (i / 3) * 5f, 3f, if (i % 2 == 0) col else acc) }
         }
     }
@@ -801,7 +899,7 @@ object Garments {
     fun back(c: Canvas, b: Body, it: Item, t: Float, behind: Boolean) {
         val col = it.colour.rgb; val acc = it.accent.rgb
         val flap = sin(t * 3f) * 3f
-        val k = it.style.key
+        val k = key(it)
         if (!behind) {
             when (k) {
                 "backpack" -> for (s in intArrayOf(-1, 1)) { line(c, darker(col, 0.2f), 3f, s * (b.sh * 0.55f), 50f, s * (b.wa + 1f), 92f) }
@@ -852,5 +950,15 @@ object Ui2 {
             2 -> com.nugggy.runwayrush.core.Icons.draw(c, "crown", x, y, s * 1.6f, col)
             else -> com.nugggy.runwayrush.core.Icons.draw(c, "music", x, y, s * 1.6f, col)
         }
+    }
+}
+
+object Ui3 {
+    /** Small school crest printed on PE uniforms. */
+    fun crest(c: Canvas, x: Float, y: Float, col: Int) {
+        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = col }
+        val path = Shapes.poly(floatArrayOf(x - 3.5f, y - 3.5f, x + 3.5f, y - 3.5f, x + 3.2f, y + 1f, x, y + 4.5f, x - 3.2f, y + 1f))
+        c.drawPath(path, p)
+        com.nugggy.runwayrush.core.Ui.star(c, x, y - 0.3f, 1.8f, Color.WHITE)
     }
 }
