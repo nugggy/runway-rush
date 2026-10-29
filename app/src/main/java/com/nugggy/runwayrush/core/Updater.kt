@@ -34,6 +34,7 @@ class Updater(private val game: Game) {
     @Volatile var notes: String = ""; private set
     private var downloadId = -1L
     private var pollT = 0f
+    private var pausedFor = 0f
     var progress = 0f; private set
     private val banner = RectF()
     private val laterBtn = RectF()
@@ -114,6 +115,17 @@ class Updater(private val game: Game) {
             val done = cur.getLong(cur.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
             val total = cur.getLong(cur.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
             if (total > 0) progress = done.toFloat() / total
+            if (st == DownloadManager.STATUS_PAUSED) {
+                pausedFor += 0.5f
+                if (pausedFor > 20f) {
+                    // flaky network: hand over to the browser rather than sitting at a stuck percentage
+                    dm.remove(downloadId); downloadId = -1; pausedFor = 0f
+                    state = State.AVAILABLE
+                    game.toast("Download stalled. Opening it in your browser.")
+                    val act = game.activity
+                    act.runOnUiThread { try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LATEST_APK))) } catch (_: Exception) {} }
+                }
+            } else pausedFor = 0f
             when (st) {
                 DownloadManager.STATUS_SUCCESSFUL -> { state = State.READY; install(dm) }
                 DownloadManager.STATUS_FAILED -> { state = State.FAILED; game.toast("Update download failed") }
